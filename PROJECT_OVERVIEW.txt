@@ -1,0 +1,223 @@
+================================================================================
+                      MESHCONNECT — PROJECT OVERVIEW & SPECIFICATION
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------+
+MeshConnect is a next-generation, off-grid, peer-to-peer (P2P) professional 
+networking mobile application built using React Native and TypeScript. It is 
+designed to enable spontaneous, serverless networking at tech conferences, 
+hackathons, seminars, and internet-restricted environments. 
+
+By leveraging Bluetooth Low Energy (BLE) mesh discovery and Wi-Fi Direct P2P 
+data streams, MeshConnect allows nearby users to broadcast, discover, and 
+exchange rich professional profiles (skills, social links, bios, availability) 
+in real-time without relying on cellular networks, cloud servers, internet 
+connectivity, or centralized user databases.
+
+
+2. THE PROBLEM & SOLUTION
+-------------------------+
+Problem:
+- Traditional networking relies heavily on active internet connections, cloud API 
+  servers, and manual exchange of physical business cards or QR codes.
+- At crowded events (conferences, expo halls, hackathons), cellular networks and 
+  Wi-Fi are frequently overloaded, leading to failed connections and lost contacts.
+- QR codes and physical cards lack instant proximity awareness and contextual 
+  availability status (e.g., whether someone is open to chat, busy, or away).
+
+Solution (MeshConnect):
+- Zero-Cloud Peer-to-Peer Networking: Operating completely offline using BLE & 
+  Wi-Fi Direct.
+- Automatic Proximity Discovery: Continuous background scanning and RSSI-based 
+  distance estimation to detect nearby professionals automatically.
+- Instant Contact Exchange (<12cm Proximity Modal): Bringing two phones close 
+  together automatically pops up an instant tap-to-connect modal.
+- Decentralized & Privacy-First: All profile data remains on local devices and is 
+  transferred directly between peers over GATT characteristics and P2P sockets.
+
+
+3. CORE FEATURES & CAPABILITIES
+-------------------------------+
+[A] Real-Time Nearby User Discovery
+    - Low-latency BLE background and foreground scanning.
+    - RSSI (Received Signal Strength Indicator) tracking to sort nearby peers by 
+      physical distance.
+    - Automatic device timeout eviction (stale devices absent for >4 seconds are 
+      purged automatically).
+
+[B] Smart Profile Exchange (GATT Sync)
+    - Full profile serialization (JSON) exchanged over BLE GATT services.
+    - Monotonically incrementing version numbers and djb2 hashing to avoid 
+      redundant transfers and ensure efficient incremental sync.
+
+[C] Ultra-Close Proximity Detection (<12 cm)
+    - Signal thresholding triggers a high-priority "Proximity Modal" when 
+      devices come within ~12 cm of each other.
+    - One-tap connection for immediate contact saving and profile viewing.
+
+[D] Professional Profile Management
+    - Customizable user profiles containing:
+      * Basic Info: Display Name, Headline, Company, College/University, Bio.
+      * Contact & Web: Email, Phone, GitHub, LinkedIn, Portfolio, Website.
+      * Tags: Professional Skills and Personal Interests.
+      * Availability Status: "Open to connect", "Busy", "Away".
+      * Avatar Support: Custom image URL or auto-generated initial avatars.
+    - Instant local persistence powered by React Native AsyncStorage.
+
+[E] Wi-Fi Direct P2P Data Sharing
+    - High-speed direct wireless transfer fallback for large payload exchange, 
+      documents, or extended media without internet access.
+
+[F] Neo-Brutalist Design System & Theme Engine
+    - High-contrast visual design featuring bold borders, vivid accent colors 
+      (Yellow, Purple, Cyan, Pink), crisp typography, and micro-interactions.
+    - Built-in Dark Mode and Light Mode with dynamic runtime toggle.
+
+
+4. TECHNICAL ARCHITECTURE & STACK
+---------------------------------+
+Framework & Language:
+  - React Native: 0.74.5
+  - React: 18.2.0
+  - TypeScript: 5.0.4
+
+Core Libraries & Dependencies:
+  - react-native-ble-plx (^3.1.2): Cross-platform Bluetooth Low Energy management 
+    (advertising, scanning, GATT server/client operations).
+  - @react-native-async-storage/async-storage (^1.23.1): Local profile & app state storage.
+  - @react-navigation/native & @react-navigation/native-stack (~6.x): App screen routing.
+  - react-native-permissions (^4.1.5): Android runtime permission management 
+    (BLUETOOTH_SCAN, BLUETOOTH_ADVERTISE, BLUETOOTH_CONNECT, ACCESS_FINE_LOCATION).
+  - react-native-uuid (^2.0.2): Unique device and session identifier generation.
+
+Service Architecture:
+  1. BLE Layer (`src/services/ble/`):
+     - `BleManagerSingleton.ts`: Single point of truth for BleManager instance.
+     - `BleAdvertiser.ts`: Broadcasts MeshConnect service UUID (`10000000-0000-1000-8000-00805F9B34FB`) 
+       and manufacturer data.
+     - `BleScanner.ts`: Low-latency scanning for surrounding MeshConnect UUIDs.
+     - `DeviceRegistry.ts`: Maintains in-memory device list, RSSI history, and eviction timers.
+     - `BleConnector.ts`: Establishes GATT connections and manages MTU size.
+
+  2. Profile Layer (`src/services/profile/`):
+     - `ProfileStore.ts`: Reads/writes local user profile to AsyncStorage.
+     - `ProfileRegistry.ts`: Caches discovered profiles of nearby peers in memory.
+     - `ProfileSyncService.ts`: Coordinates GATT profile requests, hashing, and version checks.
+
+  3. Wi-Fi Direct Layer (`src/services/wifidirect/`):
+     - `WifiDirectService.ts`: Handles P2P Wi-Fi Direct peer discovery and high-speed transfer.
+
+
+5. PROJECT DIRECTORY STRUCTURE
+------------------------------+
+Vansham Techies (MeshConnect)
+├── App.tsx                          # Application root & Navigation container
+├── index.js                         # React Native app entry point
+├── package.json                     # Project dependencies & scripts
+├── tsconfig.json                    # TypeScript compiler options
+├── PROJECT_OVERVIEW.txt             # Comprehensive project documentation
+└── src/
+    ├── assets/                      # Application logos, graphics, and static assets
+    ├── components/                  # Reusable UI Components
+    │   ├── ErrorBanner.tsx          # System-wide error notification banner
+    │   ├── PermissionGate.tsx       # Bluetooth & Location permission request UI
+    │   ├── ProfileLink.tsx          # Tappable social link chip (GitHub, LinkedIn, etc.)
+    │   ├── ProximityModal.tsx       # Tap-to-connect modal for <12 cm proximity
+    │   ├── SkillTag.tsx             # Styled skill / interest badge
+    │   ├── StatusIndicator.tsx      # Availability status badge (Open/Busy/Away)
+    │   ├── UserCard.tsx             # Professional user summary card on feed
+    │   └── UserList.tsx             # Scrollable list of nearby professionals
+    ├── hooks/                       # Custom React Hooks
+    │   ├── useBleSetup.ts           # Permission check & BLE start workflow
+    │   ├── useBleConnection.ts      # BLE connection lifecycle hook
+    │   ├── useMyProfile.ts          # Custom hook for loading/updating local user profile
+    │   ├── useNearbyDevices.ts     # Access to raw BLE device registry
+    │   └── useNearbyUsers.ts        # Nearby peers combined with profiles & RSSI
+    ├── navigation/                  # App Navigation Stack setup
+    │   ├── AppNavigator.tsx         # Stack Navigator (Home → Profile → MyProfile)
+    │   └── types.ts                 # Navigation route parameters & TypeScript definitions
+    ├── screens/                     # Main Application Screens
+    │   ├── HomeScreen.tsx           # Nearby feed, theme toggle, & proximity listener
+    │   ├── MyProfileScreen.tsx      # Edit & preview personal profile
+    │   └── ProfileScreen.tsx        # View detailed profile of discovered peer
+    ├── services/                    # Core Infrastructure Services
+    │   ├── ble/                     # BLE Advertiser, Scanner, Connector, & Registry
+    │   ├── profile/                 # Local Profile Store, Sync Service, & Cache Registry
+    │   ├── wifidirect/              # Wi-Fi Direct P2P transfer service
+    │   └── LogService.ts            # Centralized logging & diagnostic service
+    ├── theme/                       # Design System & Theme Engine
+    │   ├── colors.ts                # Light & Dark color palettes (Neo-Brutalist)
+    │   ├── spacing.ts               # Layout paddings, margins, border radii
+    │   ├── typography.ts            # Fonts, sizes, and font weights
+    │   └── ThemeContext.tsx         # React Theme Provider & toggle state
+    ├── types/                       # TypeScript Domain Types
+    │   ├── BleTypes.ts              # BLE advertisement & peripheral types
+    │   ├── ProfileTypes.ts          # UserProfile & NearbyUser interface definitions
+    │   └── LogTypes.ts              # System log entry types
+    └── utils/                       # Utility Functions
+        ├── distance.ts              # RSSI-to-distance conversion & proximity checking
+        ├── djb2.ts                  # Fast hash generation for profile change detection
+        └── validators.ts            # URL, email, and input validation functions
+
+
+6. USER FLOW & NAVIGATION
+-------------------------+
+1. Launch & Permissions Gate:
+   - App opens → checks Bluetooth & Location permissions.
+   - If missing, displays `PermissionGate` explaining why permissions are required.
+   - Once granted, starts BLE advertising and background scanning.
+
+2. Discovery Feed (`HomeScreen`):
+   - Scans for nearby MeshConnect UUIDs in real-time.
+   - Lists discovered peers ordered by RSSI signal strength (closest first).
+   - Shows connection status, availability badge, headline, and top skills.
+
+3. Instant Proximity Pop-up (<12 cm):
+   - Bringing two smartphones into ultra-close range (<12 cm) triggers `ProximityModal`.
+   - Displays target profile summary with immediate "View Full Profile" action.
+
+4. Profile Viewing (`ProfileScreen`):
+   - Tap any user card on the feed to view full bio, college, company, skills, and links.
+   - Clickable links for GitHub, LinkedIn, Email, Phone, and Portfolio.
+   - Initiate high-speed Wi-Fi Direct file/profile transfer.
+
+5. Profile Editing (`MyProfileScreen`):
+   - Edit name, title, bio, skills, social handles, and availability status.
+   - Saving updates local storage, increments profile version, and re-computes djb2 hash 
+     to broadcast updated profile to nearby devices automatically.
+
+
+7. HOW TO BUILD & RUN
+---------------------+
+Prerequisites:
+  - Node.js >= 18
+  - Android Studio & Android SDK (API 31+ recommended for BLE permissions)
+  - Physical Android Device (BLE advertising requires physical Bluetooth hardware)
+
+Commands:
+  # Install dependencies
+  npm install
+
+  # Run TypeScript typecheck
+  npm run typecheck
+
+  # Run ESLint validation
+  npm run lint
+
+  # Start React Native Metro Bundler
+  npm start
+
+  # Build & run on connected Android physical device
+  npm run android
+
+
+8. SUMMARY & HIGHLIGHTS
+----------------------+
+- Project Name: MeshConnect
+- Target Use Case: Offline, P2P proximity-based networking for events & conferences.
+- Primary Tech: React Native, TypeScript, BLE GATT Mesh, Wi-Fi Direct.
+- Visual Language: Neo-Brutalist UI with Light/Dark theme support.
+- Storage & Privacy: 100% Client-Side, Local-First, Zero-Server architecture.
+
+================================================================================

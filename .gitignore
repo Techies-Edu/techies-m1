@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+
+# Build and distribution outputs
+dist/
+build/
+.expo/
+*.apk
+*.aab
+*.app
+
+# Android build outputs & caches
+android/.gradle/
+android/app/build/
+android/.cxx/
+android/app/.cxx/
+android/.idea/
+
+# iOS build outputs & CocoaPods
+ios/Pods/
+ios/build/
+ios/DerivedData/
+
+# Keystores, signing keys & secrets
+*.jks
+*.keystore
+*.pem
+*.p12
+*.key
+*.secret
+android/app/release.keystore
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE & OS system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Antigravity artifacts work directory
+artifacts/
